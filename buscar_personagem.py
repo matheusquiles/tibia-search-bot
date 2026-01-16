@@ -23,7 +23,7 @@ driver = webdriver.Chrome(
     options=options
 )
 
-wait = WebDriverWait(driver, 15)
+wait = WebDriverWait(driver, 30)
 
 # ========================
 # TELEGRAM
@@ -48,16 +48,21 @@ def enviar_telegram(mensagem):
 # ========================
 PERSONAGENS = [
     "Kashimiro",
-    "Telescopio Refrator"
+    "Telescopio Refrator",
+    "Only Dyziox"
 ]
 
 driver.get("https://www.tibia.com/charactertrade/?subtopic=currentcharactertrades")
+
+wait.until(
+    lambda d: d.execute_script("return document.readyState") == "complete"
+)
 
 resultados = []
 
 for personagem in PERSONAGENS:
     campo_busca = wait.until(
-        EC.presence_of_element_located((By.ID, "ItemInput"))
+        EC.visibility_of_element_located((By.ID, "ItemInput"))
     )
     campo_busca.clear()
     campo_busca.send_keys(personagem)
