@@ -1,6 +1,7 @@
 import os
 import requests
 from bs4 import BeautifulSoup
+from urllib.parse import quote_plus
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
@@ -14,26 +15,22 @@ def enviar_telegram(mensagem):
         timeout=20
     )
 
-URL = "https://www.tibia.com/charactertrade/?subtopic=currentcharactertrades"
 PERSONAGEM = "Telescopio Refrator"
+BASE_URL = "https://www.tibia.com/charactertrade/"
 
-session = requests.Session()
-session.headers.update({
-    "User-Agent": "Mozilla/5.0",
-    "Content-Type": "application/x-www-form-urlencoded"
-})
-
-session.get(URL, timeout=30)
-
-payload = {
+params = {
     "subtopic": "currentcharactertrades",
-    "currentpage": "1",
     "searchstring": PERSONAGEM
 }
 
-response = session.post(URL, data=payload, timeout=30)
-html = response.text
-soup = BeautifulSoup(html, "html.parser")
+response = requests.get(
+    BASE_URL,
+    params=params,
+    headers={"User-Agent": "Mozilla/5.0"},
+    timeout=30
+)
+
+soup = BeautifulSoup(response.text, "html.parser")
 
 no_result = soup.find(
     "td",
