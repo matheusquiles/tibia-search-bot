@@ -8,21 +8,14 @@ CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 def enviar_telegram(mensagem):
     if not TELEGRAM_TOKEN or not CHAT_ID:
         return
-
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     requests.post(
-        url,
+        f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
         data={"chat_id": CHAT_ID, "text": mensagem},
         timeout=20
     )
 
-PERSONAGENS = [
-    "Kashimiro",
-    "Telescopio Refrator",
-    "Only Dyziox"
-]
-
 URL = "https://www.tibia.com/charactertrade/?subtopic=currentcharactertrades"
+PERSONAGEM = "Telescopio Refrator"
 
 session = requests.Session()
 session.headers.update({
@@ -32,32 +25,32 @@ session.headers.update({
 
 session.get(URL, timeout=30)
 
-resultados = []
+payload = {
+    "subtopic": "currentcharactertrades",
+    "currentpage": "1",
+    "searchstring": PERSONAGEM
+}
 
-for personagem in PERSONAGENS:
-    payload = {
-        "subtopic": "currentcharactertrades",
-        "currentpage": "1",
-        "searchstring": personagem
-    }
+response = session.post(URL, data=payload, timeout=30)
+html = response.text
+soup = BeautifulSoup(html, "html.parser")
 
-    response = session.post(URL, data=payload, timeout=30)
-    soup = BeautifulSoup(response.text, "html.parser")
-
-    no_result = soup.find(
+no_result = soup.find(
     "td",
-    string=lambda t: t and "No character auctions found" in t
-    )
+    string=lambda t: t and "No character auctions found." in t
+)
 
-    auction_rows = soup.select("div.InnerTableContainer table tr")
+has_auction = soup.find(
+    "a",
+    href=lambda h: h and "auctiondetails" in h
+)
 
-    if no_result:
-        resultados.append(f"❌ {personagem}: não encontrado")
-    elif len(auction_rows) > 1:
-        resultados.append(f"✅ {personagem}: encontrado ({len(auction_rows) - 1})")
-    else:
-        resultados.append(f"❌ {personagem}: não encontrado")
+if no_result:
+    resultado = f"❌ {PERSONAGEM}: não encontrado"
+elif has_auction:
+    resultado = f"✅ {PERSONAGEM}: encontrado"
+else:
+    resultado = f"⚠️ {PERSONAGEM}: resultado inconclusivo"
 
-mensagem_final = "📊 Resultado da busca diária:\n\n" + "\n".join(resultados)
-print(mensagem_final)
-enviar_telegram(mensagem_final)
+print(resultado)
+enviar_telegram(resultado)
