@@ -2,7 +2,17 @@ import os
 import requests
 from bs4 import BeautifulSoup
 
-# ... (seu código de telegram e variáveis)
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
+CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
+
+def enviar_telegram(mensagem):
+    if not TELEGRAM_TOKEN or not CHAT_ID:
+        return
+    requests.post(
+        f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
+        data={"chat_id": CHAT_ID, "text": mensagem},
+        timeout=20
+    )
 
 PERSONAGEM = "Telescopio Refrator"
 BASE_URL = "https://www.tibia.com/charactertrade/"
@@ -26,18 +36,15 @@ response = requests.get(
 if response.status_code != 200:
     print("Erro HTTP:", response.status_code)
     print(response.text[:500])
-    exit()  # ou continue, dependendo do que quiser
+    exit() 
 
 print("Status OK")
 print("URL requisitada:", response.url)
 
-# Agora sim, cria o soup
 soup = BeautifulSoup(response.text, "html.parser")
 
-# Debug depois do soup criado
 print("Título da página:", soup.title.string if soup.title else "Sem título")
 
-# Continuação do seu código...
 no_result = soup.find(
     "td",
     string=lambda t: t and "No character auctions found." in t.strip()
@@ -56,4 +63,4 @@ else:
     resultado = f"⚠️ {PERSONAGEM}: resultado **inconclusivo** (verificar manualmente)"
 
 print(resultado)
-# enviar_telegram(resultado)  # descomente quando quiser
+enviar_telegram(resultado)
