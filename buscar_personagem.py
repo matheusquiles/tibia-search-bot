@@ -29,14 +29,25 @@ PERSONAGENS = [
     "Only Dyziox"
 ]
 
-URL = "https://www.tibia.com/charactertrade/?subtopic=currentcharactertrades"
-
-HEADERS = {
+session = requests.Session()
+session.headers.update({
     "User-Agent": "Mozilla/5.0",
     "Content-Type": "application/x-www-form-urlencoded"
+})
+
+URL = "https://www.tibia.com/charactertrade/?subtopic=currentcharactertrades"
+
+# GET inicial (importantíssimo)
+session.get(URL, timeout=30)
+
+payload = {
+    "subtopic": "currentcharactertrades",
+    "currentpage": "1",
+    "searchstring": personagem
 }
 
-resultados = []
+response = session.post(URL, data=payload, timeout=30)
+soup = BeautifulSoup(response.text, "html.parser")
 
 # =========================
 # LOOP DE BUSCA
@@ -51,9 +62,11 @@ for personagem in PERSONAGENS:
     soup = BeautifulSoup(response.text, "html.parser")
 
     # Caso explícito de nenhum resultado
-    no_result = soup.find("td", string=lambda t: t and "No character auctions found" in t)
+    no_result = soup.find(
+        "td",
+        string=lambda t: t and "No character auctions found" in t
+    )
 
-    # Caso positivo real: existe link de auction
     auction_links = soup.select("a[href*='auctiondetails']")
 
     if no_result:
