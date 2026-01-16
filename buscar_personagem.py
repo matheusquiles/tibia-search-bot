@@ -6,13 +6,33 @@ TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
 def enviar_telegram(mensagem):
-    if not TELEGRAM_TOKEN or not CHAT_ID:
+    if not TELEGRAM_TOKEN:
+        print("ERRO: TELEGRAM_TOKEN não encontrado nas variáveis de ambiente!")
         return
-    requests.post(
-        f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
-        data={"chat_id": CHAT_ID, "text": mensagem},
-        timeout=20
-    )
+    if not CHAT_ID:
+        print("ERRO: TELEGRAM_CHAT_ID não encontrado nas variáveis de ambiente!")
+        return
+    
+    print("Tentando enviar mensagem para o Telegram...")
+    try:
+        r = requests.post(
+            f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
+            data={
+                "chat_id": CHAT_ID,
+                "text": mensagem,
+                "parse_mode": "Markdown"
+            },
+            timeout=15
+        )
+        
+        print(f"Status da API Telegram: {r.status_code}")
+        if r.status_code == 200:
+            print("✅ Mensagem enviada com sucesso!")
+        else:
+            print(f"❌ Erro na API: {r.status_code} - {r.text[:200]}") 
+    except Exception as e:
+        print(f"❌ Exceção ao tentar enviar: {str(e)}")
+
 
 PERSONAGEM = "Telescopio Refrator"
 BASE_URL = "https://www.tibia.com/charactertrade/"
@@ -34,26 +54,16 @@ response = requests.get(
 )
 
 if response.status_code != 200:
-    print("Erro HTTP:", response.status_code)
-    print(response.text[:500])
-    exit() 
+    print("Erro HTTP Tibia:", response.status_code)
+    exit()
 
-print("Status OK")
+print("Status OK (Tibia)")
 print("URL requisitada:", response.url)
 
 soup = BeautifulSoup(response.text, "html.parser")
 
-print("Título da página:", soup.title.string if soup.title else "Sem título")
-
-no_result = soup.find(
-    "td",
-    string=lambda t: t and "No character auctions found." in t.strip()
-)
-
-has_auction = soup.find(
-    "a",
-    href=lambda h: h and "auctionid" in h
-)
+no_result = soup.find("td", string=lambda t: t and "No character auctions found." in t.strip())
+has_auction = soup.find("a", href=lambda h: h and "auctionid" in h)
 
 if no_result:
     resultado = f"❌ {PERSONAGEM}: **não encontrado** no Char Bazaar"
