@@ -1,33 +1,28 @@
-import requests
 import os
+import requests
 from bs4 import BeautifulSoup
 
-# =========================
-# TELEGRAM
-# =========================
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
-def enviar_telegram(mensagem: str):
+def enviar_telegram(mensagem):
     if not TELEGRAM_TOKEN or not CHAT_ID:
-        print("Token ou Chat ID não configurados")
         return
 
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    payload = {
-        "chat_id": CHAT_ID,
-        "text": mensagem
-    }
-    requests.post(url, data=payload, timeout=20)
+    requests.post(
+        url,
+        data={"chat_id": CHAT_ID, "text": mensagem},
+        timeout=20
+    )
 
-# =========================
-# PERSONAGENS
-# =========================
 PERSONAGENS = [
     "Kashimiro",
     "Telescopio Refrator",
     "Only Dyziox"
 ]
+
+URL = "https://www.tibia.com/charactertrade/?subtopic=currentcharactertrades"
 
 session = requests.Session()
 session.headers.update({
@@ -35,33 +30,20 @@ session.headers.update({
     "Content-Type": "application/x-www-form-urlencoded"
 })
 
-URL = "https://www.tibia.com/charactertrade/?subtopic=currentcharactertrades"
-
-# GET inicial (importantíssimo)
 session.get(URL, timeout=30)
 
-payload = {
-    "subtopic": "currentcharactertrades",
-    "currentpage": "1",
-    "searchstring": personagem
-}
+resultados = []
 
-response = session.post(URL, data=payload, timeout=30)
-soup = BeautifulSoup(response.text, "html.parser")
-
-# =========================
-# LOOP DE BUSCA
-# =========================
 for personagem in PERSONAGENS:
     payload = {
+        "subtopic": "currentcharactertrades",
+        "currentpage": "1",
         "searchstring": personagem
     }
 
-    response = requests.post(URL, headers=HEADERS, data=payload, timeout=30)
-
+    response = session.post(URL, data=payload, timeout=30)
     soup = BeautifulSoup(response.text, "html.parser")
 
-    # Caso explícito de nenhum resultado
     no_result = soup.find(
         "td",
         string=lambda t: t and "No character auctions found" in t
@@ -72,13 +54,10 @@ for personagem in PERSONAGENS:
     if no_result:
         resultados.append(f"❌ {personagem}: não encontrado")
     elif auction_links:
-        resultados.append(f"✅ {personagem}: encontrado ({len(auction_links)} leilão(ões))")
+        resultados.append(f"✅ {personagem}: encontrado ({len(auction_links)})")
     else:
         resultados.append(f"❌ {personagem}: não encontrado")
 
-# =========================
-# RESULTADO FINAL
-# =========================
 mensagem_final = "📊 Resultado da busca diária:\n\n" + "\n".join(resultados)
 print(mensagem_final)
 enviar_telegram(mensagem_final)
