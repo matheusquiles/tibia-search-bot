@@ -45,16 +45,16 @@ for personagem in PERSONAGENS:
     soup = BeautifulSoup(response.text, "html.parser")
 
     no_result = soup.find(
-        "td",
-        string=lambda t: t and "No character auctions found" in t
+    "td",
+    string=lambda t: t and "No character auctions found" in t
     )
 
-    auction_links = soup.select("a[href*='auctiondetails']")
+    auction_rows = soup.select("div.InnerTableContainer table tr")
 
     if no_result:
         resultados.append(f"❌ {personagem}: não encontrado")
-    elif auction_links:
-        resultados.append(f"✅ {personagem}: encontrado ({len(auction_links)})")
+    elif len(auction_rows) > 1:
+        resultados.append(f"✅ {personagem}: encontrado ({len(auction_rows) - 1})")
     else:
         resultados.append(f"❌ {personagem}: não encontrado")
 
